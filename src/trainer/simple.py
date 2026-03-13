@@ -6,6 +6,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.utils.data as data
+import time
+import tdqm.auto
 
 
 class SimpleTrainer(base.Trainer):
@@ -118,3 +120,49 @@ class SimpleTrainer(base.Trainer):
         self.stats.stop_optimizer_step()
 
         return loss, None
+
+    def train(self, model_kwargs: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Overridden training loop to enforce a 5 minute execution limit 
+        as required by the reporting guidelines for our paper!
+        """
+        if model_kwargs is None:
+            model_kwargs = {}
+
+        progress_bar = tqdm.auto.tqdm(range(len(self.loader)), desc="loss: N/A")
+        self.stats.start_train()
+        
+        # --- 5-Minute Boundary Setup ---
+        start_time_sec = time.perf_counter()
+        time_limit_sec = 5 * 60  # 300 seconds (5 minutes)
+
+        for i, batch in enumerate(self.loader):
+            # Check elapsed time before starting the next step
+            elapsed_time = time.perf_counter() - start_time_sec
+            if elapsed_time >= time_limit_sec:
+                print(f"\n[INFO] Reached 5-minute execution limit at step {i} ({elapsed_time:.1f}s). Terminating loop gracefully.")
+                break
+
+            self.stats.start_step()
+            loss, descr = self.step(i, batch, model_kwargs)
+            self.stats.stop_step()
+
+            # Checkpointing
+            if self.enable_checkpointing and self.should_save_checkpoint(i):
+                self.stats.start_save_checkpoint()
+                self.save_checkpoint(i)
+                self.stats.stop_save_checkpoint()
+
+            # Logging
+            self.stats.log_loss(loss)
+            self.stats.log_step()
+
+            # Progress Bar
+            if descr is not None:
+                progress_bar.clear()
+                print(descr)
+            progress_bar.update(1)
+
+        self.stats.stop_train()
+        progress_bar.close()
+        self.stats.log_stats()
