@@ -90,34 +90,40 @@ class SimpleTrainer(base.Trainer):
         - zero_grad() called between data transfer and forward (not inside
           forward) to avoid ~0.01ms cost into step overhead
         - Data transfer (CPU to GPU) is explicitly measured as a distinct phase.
+        - Training steps have isolated phase timing to minimize CUDA sync overhead
         """
         if model_kwargs is None:
             model_kwargs = {}
 
-        # Phase 1: Data transfer (CPU → GPU)
-        self.stats.start_data_transfer()
-        batch = self.process_batch(i, batch)
-        self.stats.stop_data_transfer()
+        # Default to 'all' to preserve original behavior if no flag is passed
+        profile_phase = "all"
+        if self.conf and hasattr(self.conf, "trainer_configs") and hasattr(self.conf.trainer_configs, "simple"):
+            profile_phase = getattr(self.conf.trainer_configs.simple, "profile_phase", "all")
 
-        # Zero gradients — logically an optimizer concern, placed here
+        # Phase 1: Data transfer (CPU → GPU)
+        if profile_phase in ["all", "data_transfer"]: self.stats.start_data_transfer()
+        batch = self.process_batch(i, batch)
+        if profile_phase in ["all", "data_transfer"]: self.stats.stop_data_transfer()
+
+        # Zero gradients - logically an optimizer concern, placed here
         # so it is NOT timed as part of any phase. With set_to_none=True
         # (PyTorch default), this is ~0.01ms.
         self.optimizer.zero_grad(set_to_none=True)
 
         # Phase 2: Forward pass
-        self.stats.start_forward()
+        if profile_phase in ["all", "forward"]: self.stats.start_forward()
         loss = self.forward(i, batch, model_kwargs)
-        self.stats.stop_forward()
+        if profile_phase in ["all", "forward"]: self.stats.stop_forward()
 
         # Phase 3: Backward pass
-        self.stats.start_backward()
+        if profile_phase in ["all", "backward"]: self.stats.start_backward()
         self.backward(i, loss)
-        self.stats.stop_backward()
+        if profile_phase in ["all", "backward"]: self.stats.stop_backward()
 
         # Phase 4: Optimizer step
-        self.stats.start_optimizer_step()
+        if profile_phase in ["all", "optimizer"]: self.stats.start_optimizer_step()
         self.optimizer_step(i)
-        self.stats.stop_optimizer_step()
+        if profile_phase in ["all", "optimizer"]: self.stats.stop_optimizer_step()
 
         return loss, None
 
