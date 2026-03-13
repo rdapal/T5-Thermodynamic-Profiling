@@ -35,10 +35,18 @@
 # ==============================================================================
 
 SCRIPTS_DIR=$(readlink -f -n $(dirname $0))
-OUT_DIR="${COMP597_JOB_STUDENT_STORAGE_DIR}/final_experiments"
 
-# Ensure output directory exists
-${SCRIPTS_DIR}/bash_srun.sh "mkdir -p ${OUT_DIR}"
+# ------------------------------------------------------------------------------
+# FOLDER STRUCTURE SETUP
+# ------------------------------------------------------------------------------
+DATE_FORMAT=$(date +"%Y%m%d_%H%M%S")
+BASE_DIR="hardware_stats/experiments_${DATE_FORMAT}"
+RAW_DIR="${BASE_DIR}/raw_data"
+PLOT_DIR="${BASE_DIR}/plots"
+
+# Ensure output directories exist locally
+mkdir -p "${RAW_DIR}"
+mkdir -p "${PLOT_DIR}"
 
 # ------------------------------------------------------------------------------
 # EXPERIMENT PARAMETERS
@@ -46,8 +54,10 @@ ${SCRIPTS_DIR}/bash_srun.sh "mkdir -p ${OUT_DIR}"
 BATCH_SIZES=(16 8 4)
 REPETITIONS=(1 2 3)
 
-echo "Starting Final T5 Experiment Suite..."
-echo "Output Directory: ${OUT_DIR}"
+echo "========================================================="
+echo "Starting T5 Experiment Suite"
+echo "Output Directory: ${BASE_DIR}"
+echo "========================================================="
 
 for bs in "${BATCH_SIZES[@]}"; do
     for rep in "${REPETITIONS[@]}"; do
@@ -107,6 +117,22 @@ for bs in "${BATCH_SIZES[@]}"; do
             --trainer_stats_configs.hardware.run_id "opt_bs${bs}_rep${rep}"
 
     done
+done
+
+echo "========================================================="
+echo " GENERATING PLOTS"
+echo "========================================================="
+# Loop through all CSV files generated in the raw_data directory
+for csv_file in ${RAW_DIR}/*.csv; do
+    if [ -f "$csv_file" ]; then
+        # Extract filename to use as the plot identifier
+        filename=$(basename -- "$csv_file")
+        run_id="${filename%.*}"
+        run_id="${run_id#hardware_stats_}"
+        
+        echo "  -> Plotting ${run_id}..."
+        python ${SCRIPTS_DIR}/analysis/plot_hardware.py --csv "$csv_file" --output "${PLOT_DIR}" --run_id "${run_id}"
+    fi
 done
 
 echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
