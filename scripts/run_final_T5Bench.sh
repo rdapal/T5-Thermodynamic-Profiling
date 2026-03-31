@@ -26,9 +26,11 @@
 #      the Backward Pass
 #   6. Optimizer Profiling: Only injects `torch.cuda.synchronize()` around 
 #      the Optimizer step
+#   7. Phase Profiling: Utilize Checkpoint I/O stalls to profile potential checkpointing bottlenecks in workload
 #
 # DATA FORMAT:
 #   - Synthetic Data: Pre-generated tensors (seq_len=512, vocab=32128) bypassing I/O
+#   - To consider I/O we run our own Checkpoint Profiling to imitate non-synthetic data envrionments (I/O bottlenecks)
 #   - Time Limit: Hard-coded 5:00 minutes (300s) inside Python loop. SLURM config
 #     allocation is set at 10:00 to buffer our run time
 #   - Outputs: Logs (.log), CodeCarbon files, and V3 Hardware Stats (.csv & .json)
@@ -160,6 +162,17 @@ for bs in "${BATCH_SIZES[@]}"; do
                 --trainer_stats_configs.hardware.output_dir "${REMOTE_INDIV_DIR}" \
                 --trainer_configs.simple.profile_phase "optimizer" \
                 --trainer_stats_configs.hardware.run_id "bs${bs}_rep${rep}_opt"
+        fi
+
+	# 7. Phase Profiling: CHECKPOINT I/O STALL
+        if [[ -z "$TARGET_RUN" || "$TARGET_RUN" == "ckpt" ]]; then
+            echo "  -> Run: Phase Profiling (Checkpoint I/O Stall)"
+            ${SCRIPTS_DIR}/srun.sh --logging.level INFO --model t5 --trainer simple --data synthetic \
+                --batch_size $bs --learning_rate 1e-6 --data_configs.dataset.split '"train[:50000]"' \
+                --trainer_stats hardware \
+                --trainer_stats_configs.hardware.output_dir "${REMOTE_INDIV_DIR}" \
+                --trainer_configs.simple.profile_phase "ckpt" \
+                --trainer_stats_configs.hardware.run_id "bs${bs}_rep${rep}_ckpt"
         fi
 
     done

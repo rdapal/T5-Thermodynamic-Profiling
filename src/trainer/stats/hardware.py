@@ -3,6 +3,7 @@ Hardware Monitoring TrainerStats v.3
 
 Collects per-phase (data_transfer, forward, backward, optimizer):
   - Timing (ms) via time.perf_counter_ns().
+  - Runs Checkpoint profiling time
   - NOTE: torch.cuda.synchronize() is applied conditionally by the SimpleTrainer
     based on the `--trainer_configs.simple.profile_phase` flag to minimize CUDA overhead in our results.
 
@@ -11,6 +12,7 @@ Collects hardware metrics (Energy, Memory, Utilization, Temp):
   - Energy is inferred by reading the NVML energy counter 
     (nvmlDeviceGetTotalEnergyConsumption) across the steps that occurred within the 500ms window.
   - CO2 emissions (mg) = energy_kWh * carbon_intensity
+
 
 Known Limitations
 -----------------
@@ -114,6 +116,7 @@ class StepRecord:
     forward_time_ms: float
     backward_time_ms: float
     optimizer_time_ms: float
+    checkpoint_time_ms: float
 
     # ---- GPU Memory via PyTorch (MB) ----
     # Polled every 500ms, cached between polls
@@ -202,6 +205,10 @@ class HardwareTrainerStats(base.TrainerStats):
         self._fwd_time_ns: int = 0
         self._bwd_time_ns: int = 0
         self._opt_time_ns: int = 0
+
+        # ---- Checkpoint State ----
+        self._ckpt_start_ns: int = 0
+        self._ckpt_time_ns: int = 0
 
         # ---- 500ms Throttling State ----
         self._last_poll_ns: int = 0
@@ -303,6 +310,7 @@ class HardwareTrainerStats(base.TrainerStats):
         self._fwd_time_ns = 0
         self._bwd_time_ns = 0
         self._opt_time_ns = 0
+        self._ckpt_time_ns = 0
 
     def stop_step(self) -> None:
         step_end_ns = self._time_ns()
@@ -332,6 +340,7 @@ class HardwareTrainerStats(base.TrainerStats):
             forward_time_ms=self._fwd_time_ns / 1e6,
             backward_time_ms=self._bwd_time_ns / 1e6,
             optimizer_time_ms=self._opt_time_ns / 1e6,
+            checkpoint_time_ms=self._ckpt_time_ns / 1e6,
             gpu_memory_allocated_mb=self._cached_mem_alloc,
             gpu_memory_reserved_mb=self._cached_mem_res,
             gpu_memory_peak_mb=self._cached_mem_peak,
@@ -348,7 +357,7 @@ class HardwareTrainerStats(base.TrainerStats):
 
     # ==========================================================
     # TrainerStats interface — Phase Hooks
-    # NOTE: torch.cuda.synchronize() is now handled by simple.py based on phase flags
+    # NOTE: torch.cuda.synchronize() is handled by simple.py based on phase flags
     # ==========================================================
 
     def start_data_transfer(self) -> None:
@@ -384,12 +393,12 @@ class HardwareTrainerStats(base.TrainerStats):
         self._opt_time_ns = self._time_ns() - self._opt_start_ns
     
     def start_save_checkpoint(self) -> None:
-
-        pass
+        self._sync_cuda()
+        self._ckpt_start_ns = self._time_ns()
 
     def stop_save_checkpoint(self) -> None:
-
-        pass 
+        self._sync_cuda()
+        self._ckpt_time_ns = self._time_ns() - self._ckpt_start_ns
 
     # ==========================================================
     # Loss / Logging
@@ -436,6 +445,7 @@ class HardwareTrainerStats(base.TrainerStats):
             ("Forward",   "forward_time_ms"),
             ("Backward",  "backward_time_ms"),
             ("Optimizer", "optimizer_time_ms"),
+            ("Checkpoint","checkpoint_time_ms"),
             ("Total step","step_time_ms"),
         ]:
             vals = [getattr(r, attr) for r in steady]

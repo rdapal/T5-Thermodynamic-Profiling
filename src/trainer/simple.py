@@ -152,12 +152,21 @@ class SimpleTrainer(base.Trainer):
             loss, descr = self.step(i, batch, model_kwargs)
             self.stats.stop_step()
 
-            # Checkpointing
-            if self.enable_checkpointing and self.should_save_checkpoint(i):
-                self.stats.start_save_checkpoint()
-                self.save_checkpoint(i)
-                self.stats.stop_save_checkpoint()
+            # --- Forced Checkpointing Profiling ---
+            # Every 50 steps, force a disk write to profile I/O stalls in T5
+            # The reason is that we found no GPU bottlenecks in pre-checkpoint profiling (check pre-profiling commit for non-checkpoint profiling version of our analysis)
+            # Extract the profile_phase flag safely from config
+            profile_phase = "all"
+            if self.conf and hasattr(self.conf, "trainer_configs") and hasattr(self.conf.trainer_configs, "simple"):
+                profile_phase = getattr(self.conf.trainer_configs.simple, "profile_phase", "all")
 
+            # ONLY force a disk I/O stall if the user explicitly passed the 'ckpt' flag
+            # We overwrite a single dummy file to protect the 200GB SLURM partition limit
+            if profile_phase == "ckpt" and i > 0 and i % 50 == 0:
+                self.stats.start_save_checkpoint()
+                torch.save(self.model.state_dict(), "./dummy_profiling_ckpt.pt")
+                self.stats.stop_save_checkpoint()
+               
             # Logging
             self.stats.log_loss(loss)
             self.stats.log_step()
