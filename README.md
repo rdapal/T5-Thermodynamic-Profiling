@@ -80,3 +80,7 @@ For a complete mathematical breakdown of the computation graph limits, hardware 
 
 👉 **[Read the Full Paper (PDF) - Sustainability in Systems Design](./paper/T5_Energy_Profiling_Dapalma.pdf)**
 👉 **[View the Presentation Slides (PPTX)](./paper/T5_Workload_Analysis_Presentation%20FINAL%20-%20Raphael%20Dapalma.pptx)**
+
+## 🤝 Acknowledgements
+* **Olivier Michaud:** This project utilizes and heavily modifies the indredible work of a foundational ML training framework originally engineered by Olivier Michaud. The base pipeline was adapted to integrate the decoupled hardware telemetry and phase-isolation methodologies presented in this study.
+* **Professor Oana Belmau:** This research and architectural pipeline was developed under the supervision of Prof. Oana Belmau (McGill University) for the COMP 597: Sustainability in Systems Design curriculum, contributing to upcoming publications with MILA.
