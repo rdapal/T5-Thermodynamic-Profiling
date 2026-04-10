@@ -1,0 +1,32 @@
+{
+  "version": 3,
+  "run_id": "bs4_rep2_timeline",
+  "timestamp": "2026-04-06T15:56:53.321309",
+  "gpu": {
+    "name": "NVIDIA RTX 5000 Ada Generation",
+    "power_limit_w": 250.0
+  },
+  "config": {
+    "num_steps": 1191,
+    "warmup_steps": 6,
+    "steady_state_steps": 1185,
+    "carbon_intensity_gco2eq_per_kwh": 30.0
+  },
+  "totals": {
+    "energy_j": 64388.235,
+    "energy_wh": 17.885621,
+    "co2_mg": 536.5686,
+    "co2_g": 0.5365686
+  },
+  "steady_state_averages": {
+    "step_time_ms": 249.89,
+    "energy_step_mj": 54123.9,
+    "gpu_utilization_pct": 99.2,
+    "gpu_temperature_c": 61.4
+  },
+  "known_limitations": [
+    "Hardware metrics polled every >= 500ms to reduce overhead",
+    "Energy inferred from NVML total counter and amortized across steps in window",
+    "Phase synchronization controlled by SimpleTrainer to isolate overhead"
+  ]
+}
