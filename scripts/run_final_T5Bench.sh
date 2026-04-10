@@ -186,18 +186,20 @@ ${SCRIPTS_DIR}/bash_srun.sh "bash -c 'cp ${REMOTE_INDIV_DIR}/*.csv ${LOCAL_INDIV
 # Pull the generated JSON metadata files as well
 ${SCRIPTS_DIR}/bash_srun.sh "bash -c 'cp ${REMOTE_INDIV_DIR}/*.json ${LOCAL_INDIV_DIR}/ 2>/dev/null || true'"
 
-echo "========================================================="
-echo " GENERATING PLOTS"
-echo "========================================================="
+# NOTE: this is legacy code for plot generation
+
+#echo "========================================================="
+#echo " GENERATING PLOTS"
+#echo "========================================================="
 # Safely attempt to plot the fetched data
-if [ "$(ls -A ${LOCAL_INDIV_DIR}/*.csv 2>/dev/null)" ]; then
-    echo "  -> Aggregating data and generating plots per batch size..."
-    ${PROJECT_ROOT}/venv/bin/python ${SCRIPTS_DIR}/analysis/plot_hardware.py \
-        --input_dir "${LOCAL_INDIV_DIR}" \
-        --output_dir "${LOCAL_PLOT_DIR}"
-else
-    echo "[WARNING] No CSV files were found in ${LOCAL_INDIV_DIR} to plot."
-fi
+#if [ "$(ls -A ${LOCAL_INDIV_DIR}/*.csv 2>/dev/null)" ]; then
+#    echo "  -> Aggregating data and generating plots per batch size..."
+#    ${PROJECT_ROOT}/venv/bin/python ${SCRIPTS_DIR}/analysis/plot_hardware.py \
+#        --input_dir "${LOCAL_INDIV_DIR}" \
+#        --output_dir "${LOCAL_PLOT_DIR}"
+#else
+#    echo "[WARNING] No CSV files were found in ${LOCAL_INDIV_DIR} to plot."
+#fi
 
 echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
 echo " --> ALL EXPERIMENTS COMPLETE <---"
