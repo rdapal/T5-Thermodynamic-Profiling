@@ -1,42 +1,82 @@
-# COMP597 Starter Code
-This repository contains starter code for COMP597: Sustainability in Systems Design - Energy Efficiency analysis using CodeCarbon. 
+# ⚡ T5 Thermodynamic Profiling & Hardware Telemetry
 
-The starter code provides the basics to train a machine learning model using PyTorch. More precisely, the provided code is a command line tool that is designed to be easily extended with new features. It provides the basics to add models, add command line arguments for configuration purposes, add data collection methods, or modify the training loop. 
+![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)
+![PyTorch](https://img.shields.io/badge/PyTorch-Transformers-EE4C2C?logo=pytorch&logoColor=white)
+![Bash](https://img.shields.io/badge/Bash-SLURM_Orchestration-4EAA25?logo=gnu-bash&logoColor=white)
+![MLOps](https://img.shields.io/badge/MLOps-Hardware_Profiling-blue)
 
-The repository also provides you with the means to run the code both locally and on Slurm. The expectations are that the Slurm nodes managed by the schools will be used for the final experiments, but if you have a GPU with Cuda and wish to test your code locally, you will find everything you need to do so as well (assuming a Linux host).
+A decoupled, phase-isolated hardware telemetry pipeline engineered to profile the thermodynamic efficiency, VRAM saturation, and CPU dispatch bottlenecks of HuggingFace T5 workloads. 
 
-## Getting Started
+## 🚀 Overview
+As machine learning models scale, tracking their energy footprint without introducing massive "observer effect" overheads is a critical systems challenge. Traditional hardware polling blocks execution threads and destroys asynchronous GPU pipeline speed.
 
-As mentioned above, the provided code is a command line tool. The entry point is the `launch.py` file, located at the root of this repository. Running the `python3 launch.py --help` (locally) or `srun.sh --help` (Slurm) will print a basic help message listing all the possible flags that can be used to configure the execution of a training loop. 
+This pipeline bypasses traditional measurement bottlenecks by employing a **phase-isolated profiling architecture**. It achieves a strictly bounded worst-case measurement overhead of **<3%** and demonstrates **"Zero Dark Time"** within the PyTorch execution graph, allowing for sub-millisecond precision when analyzing complex ML architectures.
 
-Before digging straight into the code, visit the [documentation](docs/ToC.md). It provides details about the provided code, the required Python environment, how to use Slurm in the context of this project, and how to extend the code provided. 
+## 🧰 System Architecture
 
-## Models
+The project is structured as a robust orchestration matrix designed for SLURM cluster environments:
 
-| Milabench Benchmark Name | Milabench Source Code | Model Name | Type | Architecture | Size | Documentation | Dataset | Pretrained Weights | Notes |
-| :--- | :---: | :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| bert-tf32-fp16 | [`milabench/benchmarks/huggingface`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/huggingface) | BERT | NLP | Transformer | 116M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/bert) | [Synthetic Dataset from MilaBench](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/synth.py) | No pre-trained weights, Milabench uses the default HugginFace config. See how Milabench creates the model [here](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/models.py) | N/A |
-| N/A | [`milabench/benchmarks/huggingface`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/huggingface) | DistilBERT | NLP | Transformer | 67M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/distilbert) | [Synthetic Dataset from MilaBench](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/synth.py) | [HuggingFace Model Card](https://huggingface.co/distilbert/distilbert-base-uncased), See how Milabench loads the model [here](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/models.py) | N/A |
-| t5 | [`milabench/benchmarks/huggingface`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/huggingface) | T5 | NLP | Transformer | 220M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/t5) | [Synthetic Dataset from MilaBench](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/synth.py) | [HuggingFace T5 Base Model Card](https://huggingface.co/google-t5/t5-base), See how Milabench loads the model [here](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/models.py) | N/A |
-| N/A | [`milabench/benchmarks/huggingface`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/huggingface) | OPT | NLP | Transformer | 350M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/opt) | [Synthetic Dataset from MilaBench](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/synth.py) | [HuggingFace Opt-350M Model Card](https://huggingface.co/facebook/opt-350m), See how Milabench loads the model [here](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/models.py) | N/A |
-| N/A | [`milabench/benchmarks/torchvision`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/torchvision) | Resnet152 | CV | CNN | 60M | [Pytorch Model Documentation](https://docs.pytorch.org/vision/0.24/models/generated/torchvision.models.resnet152.html) | [FakeImageNet](https://huggingface.co/datasets/InfImagine/FakeImageDataset) | [TorchVison pretrained weights](https://docs.pytorch.org/vision/0.24/models/generated/torchvision.models.resnet152.html#torchvision.models.ResNet152_Weights) | N/A |
-| convnext_large-tf32-fp16 | [`milabench/benchmarks/torchvision`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/torchvision) | ConvNext Large | CV | CNN | 200M | [Pytorch Model Documentation](https://docs.pytorch.org/vision/0.24/models/generated/torchvision.models.convnext_large.html#convnext-large) | [FakeImageNet](https://huggingface.co/datasets/InfImagine/FakeImageDataset) | [TorchVision pretrained weights](https://docs.pytorch.org/vision/0.24/models/generated/torchvision.models.convnext_large.html#torchvision.models.ConvNeXt_Large_Weights) | N/A |
-| regnet_y_128gf | [`milabench/benchmarks/torchvision`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/torchvision) | RegNet Y 128GF | CV | CNN,RNN | 693M | [PyTorch Model Documentation](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.regnet_y_128gf.html) | [FakeImageNet](https://huggingface.co/datasets/InfImagine/FakeImageDataset) | [TorchVision pretrained weight](https://docs.pytorch.org/vision/main/models/generated/torchvision.models.regnet_y_128gf.html#torchvision.models.RegNet_Y_128GF_Weights) | N/A | 
-| vjepa-single | [`milabench/benchmarks/vjepa`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/vjepa) | V-Jepa2 | CV | Transformer | 632M | [Source library](https://github.com/facebookresearch/jepa/tree/3081b0ad7b9651373ccef40c1d46b62f46cb7146) | [MilaBench FakeVideo Dataset Generation](https://github.com/mila-iqia/milabench/blob/master/benchmarks/vjepa/prepare.py) | No pre-trained weights, see how they load the model [here](https://github.com/mila-iqia/milabench/blob/master/benchmarks/vjepa/main.py) using the `init_video_model`. | It would be best to create a gitsubmodule to import the library they use under `src/models/vjepa2/`, or similar. |
-| pna | [`milabench/benchmarks/geo_gnn`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/geo_gnn) | PNA | Graphs | GNN | 4M | [Torch Geometric Documentation](https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.models.PNA.html) | Milabench uses a subset of [PCQM4Mv2](https://pytorch-geometric.readthedocs.io/en/2.7.0/generated/torch_geometric.datasets.PCQM4Mv2.html), which they obtain with this [code](https://github.com/mila-iqia/milabench/blob/master/benchmarks/geo_gnn/pcqm4m_subset.py) | No pretrained weights, as Milabench trains a model from scratch using a subset of PCQM4Mv2. See the model configuration [here](https://github.com/mila-iqia/milabench/blob/master/benchmarks/geo_gnn/bench/models.py) | N/A |
-| recursiongfn | [`milabench/benchmarks/recursiongfn`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/recursiongfn) | GFlowNet | Graphs | GFlowNet, T. | 600M | [Paper introducing model](https://arxiv.org/abs/2106.04399), [library used by Milabench](https://github.com/Delaunay/gflownet/tree/milabench) | No dataset as it is a generative task. | Unfortunately, there is no documentation, but the weights are from [here](https://github.com/GFNOrg/gflownet/blob/master/mols/data/pretrained_proxy/best_params.pkl.gz) | It would be best to create a gitsubmodule to import the library they use under `src/models/gflownet/`, or similar.  |
-| whisper | [`milabench/benchmarks/huggingface`](https://github.com/mila-iqia/milabench/tree/master/benchmarks/huggingface) | Whisper | ASR | Transformer | 37.8M | [HuggingFace Documentation](https://huggingface.co/docs/transformers/en/model_doc/whisper) | [Synthetic Dataset from MilaBench](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/synth.py) | [HuggingFace Whisper Tiny Model Card](https://huggingface.co/openai/whisper-tiny), See how Milabench creates the model [here](https://github.com/mila-iqia/milabench/blob/master/benchmarks/huggingface/bench/models.py) | N/A |
-
-### Datasets
-
-Some of the datasets you will be using are larger the storage provided for this course. The reality is that you do not need a full dataset to do energy measurements. A subset allowing for a few hundred or thousand iterations is sufficient to get meaningful results. Remember, we are not measuring the performance of the models, so there is no need to train for a certain accuracy or other metric. 
-
-If you decide to store your dataset on the shared partition (see the provided Slurm [documentation](docs/slurm.md)), **please reduce the size of the dataset to around 5GB (at most 10GB)**. For example, the dataset used in the provided GPT2 example, only contains one file of the C4 dataset. There are various ways to achieve this, and it is dependent on your dataset. Explore the options available! 
-
-## CodeCarbon Resources
-- [CodeCarbon Colab Tutorial](https://colab.research.google.com/drive/1eBLk-Fne8YCzuwVLiyLU8w0wNsrfh3xq)
-- [CodeCarbon documentation](https://mlco2.github.io/codecarbon/)
+* **The Orchestrator (`scripts/run_final_T5Bench.sh`):** A master execution script that automates the $3 \times 3$ experimental matrix across varying batch sizes, orchestrating baselines, CodeCarbon tracking, and forced I/O stalls.
+* **Phase-Decoupled Profiler (`src/trainer/simple.py`):** Utilizes custom phase-flag guards to selectively inject `torch.cuda.synchronize()` barriers. This isolates measurement overhead strictly to the phase being evaluated (Forward, Backward, or Optimizer).
+* **Throttled Telemetry (`src/trainer/stats/hardware.py`):** A custom hardware tracker that caches metrics and implements a $\ge 500$ms polling throttle to prevent NVML API queries from starving the main CPU thread.
+* **PCIe Bypass (`src/data/synthetic/data.py`):** Leverages synthetic MilaBench datasets generated directly in system memory to completely bypass the PCIe bus, guaranteeing 100% GPU pipeline saturation during compute baselines.
 
 ---
 
+## 📊 Key Empirical Findings
 
+Testing conducted on an **NVIDIA RTX 5000 Ada Generation (32GB VRAM)** GPU yielded the following systems insights:
+
+### 1. The $O(1)$ Optimizer Bottleneck
+Smaller batch sizes disproportionately waste execution time and energy on fixed-cost parameter updates. At Batch Size 2, the GPU wastes nearly **28% of its 250W power budget** on the Optimizer phase, proving that maximizing batch size to the VRAM ceiling is a strict thermodynamic requirement.
+![Phase Variance](./plots/Figure_8_Phase_Variance.png)
+
+### 2. VRAM Saturation Ceilings
+Mapped the exact computation graph caching limits for a 220M parameter model, mathematically proving that Batch Size 8 is the absolute physical ceiling for a 32GB accelerator before inducing Out-Of-Memory (OOM) exceptions.
+![Resource Utilization](./plots/Figure_4_Resource_Utilization.png)
+
+### 3. CPU Dispatch Inefficiency (Inverse Scaling)
+Observed an inverse scaling law in CPU utilization. Because small batch sizes compute so quickly, they force the CPU to orchestrate and dispatch CUDA kernels at more than **3x the frequency** of maximized batch sizes, needlessly taxing logical cores.
+
+### 4. I/O Checkpointing Vulnerability
+Visualized severe thermal and utilization penalties induced by forced Checkpoint disk writes. Synchronized storage writes caused GPU utilization to plummet from >99% to 91.6%, physically cooling the hardware by 15°C as the compute pipeline stalled waiting for storage subsystems.
+![Checkpoint Stall](./plots/Figure_3_Checkpoint_Stall.png)
+
+### 5. Macro Throughput vs. Energy
+Scaling from Batch Size 2 up to the VRAM ceiling of Batch Size 8 boosts processing throughput and consequently drops the thermodynamic cost from ~14.9 Joules per sample down to ~12.6 Joules per sample.
+![Macro Throughput](./plots/Figure_1_Macro_Throughput.png)
+
+---
+
+## ⚙️ Installation & Usage
+
+### Prerequisites
+* SLURM Workload Manager
+* Conda / Mamba
+* NVIDIA NVML Drivers
+
+### 1. Initialize the Environment
+```bash
+git clone [https://github.com/yourusername/T5-Thermodynamic-Profiling.git](https://github.com/yourusername/T5-Thermodynamic-Profiling.git)
+cd T5-Thermodynamic-Profiling
+source scripts/conda_init.sh
+source scripts/env_setup.sh
+```
+
+### 2. Execute the Profiling Matrix
+Dispatch the automated telemetry suite to the SLURM cluster:
+```bash
+sbatch scripts/run_final_T5Bench.sh
+```
+
+#### 3. Parse Hardware Logs & Generate Visualizations
+Generate the comparative PNG plots from the raw hardware telemetry outputs:
+```bash
+python3 scripts/analysis/plot_paper_figures.py
+```
+
+## 📄 Documentation & Full Research
+For a complete mathematical breakdown of the computation graph limits, hardware throttling methodologies, and thermodynamic trade-offs, refer to the full academic paper and presentation slides included in this repository:
+
+👉 **[Read the Full Paper (PDF) - Sustainability in Systems Design](./paper/T5_Energy_Profiling_Dapalma.pdf)**
+👉 **[View the Presentation Slides (PPTX)](./paper/T5_Workload_Analysis_Presentation%20FINAL%20-%20Raphael%20Dapalma.pptx)**
